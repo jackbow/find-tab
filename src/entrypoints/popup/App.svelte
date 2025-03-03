@@ -49,10 +49,19 @@
       case 'Escape':
         window.close();
         break;
+      // case 'Backspace':
+      //   if (search.length > 0) return;
+      //   if (selectedTab?.id) {
+      //     chrome.tabs.remove(selectedTab.id);
+      //     tabs = tabs.filter((tab) => tab.id !== selectedTab?.id);
+      //     selectedIndex = selectedIndex === tabs.length - 1 ? selectedIndex - 1 : selectedIndex;
+      //     selectedTab = tabs?.[selectedIndex];
+      //   }
+      //   break;
     }
   });
   $effect(() => {
-    if (prevFilteredTabsLength !== filteredTabs.length) {
+    if (search.length > 0 && prevFilteredTabsLength !== filteredTabs.length) {
       selectedIndex = 0;
       selectedTab = filteredTabs?.[selectedIndex];
       prevFilteredTabsLength = filteredTabs.length;
