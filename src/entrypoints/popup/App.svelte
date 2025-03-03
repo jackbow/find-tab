@@ -158,6 +158,12 @@
                   e.stopPropagation();
                   tabs = tabs.filter((t) => t.id !== tab.id);
                   if (tab.id) await browser.tabs.remove(tab.id);
+                  recentlyClosedTabs = isSafari
+                    ? []
+                    : (await browser?.sessions?.getRecentlyClosed({ maxResults: 10 }))
+                        ?.map((session) => session.tab)
+                        ?.filter((t) => !!t);
+                  if (recentlyClosedTabs.length > 0) tabs.push(recentlyClosedTabs[0]);
                 }}
               >
                 <Icon name="close" height={18} width={18} />
