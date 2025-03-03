@@ -1,6 +1,6 @@
 {
   "name": "find-tab",
-  "description": "manifest.json description",
+  "description": "Replicates Chrome's 'Find Tab' feature",
   "private": true,
   "version": "1.0.0",
   "type": "module",
