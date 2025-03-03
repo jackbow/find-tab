@@ -29,7 +29,13 @@
       : (await browser?.sessions?.getRecentlyClosed({ maxResults: 10 }))
           ?.map((session) => session.tab)
           ?.filter((t) => !!t);
-    tabs = (await browser.tabs.query({})).concat(recentlyClosedTabs);
+    tabs = (await browser.tabs.query({}))
+      .sort((a, b) => {
+        if (a.active) return 1;
+        if (b.active) return -1;
+        return (b.lastAccessed ?? 0) - (a.lastAccessed ?? 0);
+      })
+      .concat(recentlyClosedTabs);
     selectedTab = tabs?.[0];
   });
   const chooseTab = (params: { tabID?: number; sessionID?: string; windowID?: number }) => {
