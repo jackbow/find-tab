@@ -2,20 +2,28 @@
 
 <script lang="ts">
   import { onMount } from 'svelte';
-  import browser from 'webextension-polyfill';
+  import browser, { sessions } from 'webextension-polyfill';
   import { formatDistanceToNow } from 'date-fns';
   import Icon from '~/lib/Icon.svelte';
   let tabs: browser.Tabs.Tab[] = $state([]);
+  let recentlyClosedTabs: browser.Tabs.Tab[] = $state([]);
   let filteredTabs: browser.Tabs.Tab[] = $derived(
     tabs.filter((tab) => (tab.title ?? '').toLowerCase().includes(search.toLowerCase()))
   );
+  let filteredRecentlyClosedTabs: browser.Tabs.Tab[] = $derived(
+    recentlyClosedTabs.filter((tab) => (tab.title ?? '').toLowerCase().includes(search.toLowerCase()))
+  );
+  const openTabCount = $derived(filteredTabs.length - filteredRecentlyClosedTabs.length);
   let prevFilteredTabsLength = $state(filteredTabs.length);
   let selectedTabID: number | undefined = $state(undefined);
   let search = $state('');
   let selectedIndex = $state(0);
   let hoveredTabID: number | undefined = $state(undefined);
   onMount(async () => {
-    tabs = await browser.tabs.query({});
+    recentlyClosedTabs = (await browser.sessions.getRecentlyClosed({ maxResults: 10 }))
+      .map((session) => session.tab)
+      .filter((t) => !!t);
+    tabs = (await browser.tabs.query({})).concat(recentlyClosedTabs);
     selectedTabID = tabs?.[0]?.id;
   });
   const switchToTabID = (tabID: number | undefined) => {
@@ -71,7 +79,10 @@
   </span>
   {#if tabs.length > 0}
     <ul class="border-t border-gray-200 dark:border-gray-700">
-      {#each filteredTabs as tab}
+      {#each filteredTabs as tab, i}
+        {#if i === openTabCount}
+          <li class="text-gray-500 text-sm px-4 py-1">Recently closed</li>
+        {/if}
         <li>
           <button
             class={{
@@ -80,7 +91,10 @@
             }}
             onmouseenter={() => (hoveredTabID = tab.id)}
             onmouseleave={() => (hoveredTabID = undefined)}
-            onclick={() => switchToTabID(tab.id)}
+            onclick={() => {
+              if (i < openTabCount) switchToTabID(tab.id);
+              else browser.sessions.restore(tab.sessionId);
+            }}
           >
             <span class="flex items-center place-self-start truncate space-x-4">
               <div class="h-4 w-4 max-w-4 min-w-4">
@@ -109,20 +123,25 @@
                 </span>
                 <div class="flex opacity-60">
                   {#if tab.url && tab.url.includes('://')}
-                    {tab.url.split('://')[1].split('/')[0]} •
+                    {tab.url.split('://')[1].split('/')[0]}
+                    {#if i < openTabCount}
+                      •
+                    {/if}
                   {/if}
-                  {formatDistanceToNow(tab.lastAccessed ?? new Date(), { addSuffix: true })}
+                  {#if i < openTabCount}
+                    {formatDistanceToNow(tab.lastAccessed ?? new Date(), { addSuffix: true })}
+                  {/if}
                 </div>
               </div>
             </span>
-            {#if hoveredTabID === tab.id}
+            {#if hoveredTabID === tab.id && i < openTabCount}
               <button
                 class="h-4 w-4 cursor-pointer hover:text-red-500 duration-150"
                 onclick={async (e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  if (tab.id) await browser.tabs.remove(tab.id);
                   tabs = tabs.filter((t) => t.id !== tab.id);
+                  if (tab.id) await browser.tabs.remove(tab.id);
                 }}
               >
                 <Icon name="close" height={18} width={18} />

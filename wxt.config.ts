@@ -7,7 +7,7 @@ export default defineConfig({
   modules: ['@wxt-dev/module-svelte'],
   manifest: {
     manifest_version: 3,
-    permissions: ["tabs"],
+    permissions: ["tabs", "sessions"],
     host_permissions: [
       "*"
     ],
