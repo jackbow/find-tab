@@ -3,8 +3,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import browser from 'webextension-polyfill';
-  import { formatDistanceToNow, format } from 'date-fns';
-
+  import { formatDistanceToNow } from 'date-fns';
   import Icon from '~/lib/Icon.svelte';
   let tabs: browser.Tabs.Tab[] = $state([]);
   let filteredTabs: browser.Tabs.Tab[] = $derived(
@@ -57,9 +56,7 @@
   const titleResultIDs = $derived(new Set(filteredTabs.map((tab) => tab.id)));
 </script>
 
-<!-- "Search                           ⇧⌘E" -->
 <main class="w-80">
-  {tabs.length}{selectedTabID}
   <span class="flex items-center pr-2">
     <input
       type="text"
@@ -78,16 +75,14 @@
         <li>
           <button
             class={{
-              ['cursor-pointer w-full px-2 p-1 flex items-center justify-between']: true,
+              ['cursor-pointer w-full px-4 p-1 flex items-center justify-between']: true,
               ['bg-gray-100 dark:bg-stone-800']: selectedTabID === tab.id,
             }}
             onmouseenter={() => (hoveredTabID = tab.id)}
             onmouseleave={() => (hoveredTabID = undefined)}
             onclick={() => switchToTabID(tab.id)}
           >
-            <!-- <button class="cursor-pointer" onclick={() => switchToTabID(tab.id)}> -->
-            <span class="flex items-center place-self-start truncate">
-              <!-- highlight the part of the tab.title that contains the search term -->
+            <span class="flex items-center place-self-start truncate space-x-4">
               <div class="h-4 w-4 max-w-4 min-w-4">
                 {#if tab.favIconUrl}
                   <img src={tab.favIconUrl} alt="favicon" />
@@ -98,8 +93,8 @@
                   <Icon name="earth" height={18} width={18} />
                 {/if}
               </div>
-              <div class="flex flex-col">
-                <span class="overflow-ellipsis overflow-hidden px-2 rounded-sm">
+              <div class="flex flex-col items-start">
+                <span class="overflow-ellipsis overflow-hidden text-[.8rem]">
                   {#if titleResultIDs.has(tab.id)}
                     {#each getSearchParts(tab?.title ?? '', search) as part, i (i)}
                       {#if i % 2 == 0}
@@ -112,15 +107,14 @@
                     <p>{tab.title || tab.url}</p>
                   {/if}
                 </span>
-                <div class="flex">
-                  {tab.url && tab.url.split('://')[1].split('/')[0]}
-                  •
-                  <!-- convert tab.lastaccessed to n seconds ago, etc -->
+                <div class="flex opacity-60">
+                  {#if tab.url && tab.url.includes('://')}
+                    {tab.url.split('://')[1].split('/')[0]} •
+                  {/if}
                   {formatDistanceToNow(tab.lastAccessed ?? new Date(), { addSuffix: true })}
                 </div>
               </div>
             </span>
-            <!-- </button> -->
             {#if hoveredTabID === tab.id}
               <button
                 class="h-4 w-4 cursor-pointer hover:text-red-500 duration-150"
@@ -150,5 +144,8 @@
       background-color: #121212;
       color: rgba(255, 255, 255, 0.87);
     }
+  }
+  li:last-child > button {
+    padding-bottom: calc(var(--spacing) * 2) /* 0.5rem = 8px */;
   }
 </style>
