@@ -1,16 +1,16 @@
 {
-  "name": "wxt-svelte-starter",
+  "name": "find-tab",
   "description": "manifest.json description",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "wxt",
-    "dev:firefox": "wxt -b firefox",
-    "build": "wxt build",
-    "build:firefox": "wxt build -b firefox",
-    "zip": "wxt zip",
-    "zip:firefox": "wxt zip -b firefox",
+    "dev:firefox": "wxt -b firefox --mv3",
+    "build": "wxt build --mv3",
+    "build:firefox": "wxt build -b firefox --mv3",
+    "zip": "wxt zip --mv3",
+    "zip:firefox": "wxt zip -b firefox --mv3",
     "check": "svelte-check --tsconfig ./tsconfig.json",
     "postinstall": "wxt prepare"
   },
@@ -28,6 +28,7 @@
   "dependencies": {
     "@tailwindcss/postcss": "^4.0.9",
     "date-fns": "^4.1.0",
+    "flexsearch": "^0.7.43",
     "postcss": "^8.5.3",
     "tailwindcss": "^4.0.9",
     "webextension-polyfill": "^0.12.0"

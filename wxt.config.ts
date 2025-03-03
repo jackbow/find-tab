@@ -6,10 +6,9 @@ export default defineConfig({
   extensionApi: 'webextension-polyfill',
   modules: ['@wxt-dev/module-svelte'],
   manifest: {
-    manifest_version: 3,
     permissions: ["tabs", "sessions"],
     host_permissions: [
-      "*"
+      "<all_urls>"
     ],
     background: { scripts: ["src/entrypoints/background.ts"] },
     action: {
