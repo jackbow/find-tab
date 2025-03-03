@@ -2,13 +2,17 @@
 
 <script lang="ts">
   import { onMount } from 'svelte';
-  import browser, { sessions } from 'webextension-polyfill';
+  import browser from 'webextension-polyfill';
   import { formatDistanceToNow } from 'date-fns';
   import Icon from '~/lib/Icon.svelte';
+  const isSafari = navigator.userAgent.includes('Safari') && !navigator.userAgent.includes('Chrome');
   let tabs: browser.Tabs.Tab[] = $state([]);
   let recentlyClosedTabs: browser.Tabs.Tab[] = $state([]);
   let filteredTabs: browser.Tabs.Tab[] = $derived(
-    tabs.filter((tab) => (tab.title ?? '').toLowerCase().includes(search.toLowerCase()))
+    tabs.filter(
+      (tab) =>
+        (isSafari ? !!tab.title && !!tab.url : true) && (tab.title ?? '').toLowerCase().includes(search.toLowerCase())
+    )
   );
   let filteredRecentlyClosedTabs: browser.Tabs.Tab[] = $derived(
     recentlyClosedTabs.filter((tab) => (tab.title ?? '').toLowerCase().includes(search.toLowerCase()))
@@ -20,17 +24,20 @@
   let selectedIndex = $state(0);
   let hoveredTabID: number | undefined = $state(undefined);
   onMount(async () => {
-    recentlyClosedTabs = (await browser.sessions.getRecentlyClosed({ maxResults: 10 }))
-      .map((session) => session.tab)
-      .filter((t) => !!t);
+    recentlyClosedTabs = isSafari
+      ? []
+      : (await browser?.sessions?.getRecentlyClosed({ maxResults: 10 }))
+          ?.map((session) => session.tab)
+          ?.filter((t) => !!t);
     tabs = (await browser.tabs.query({})).concat(recentlyClosedTabs);
     selectedTab = tabs?.[0];
   });
-  const chooseTab = (params: { tabID?: number; sessionID?: string }) => {
-    const { tabID, sessionID } = params;
+  const chooseTab = (params: { tabID?: number; sessionID?: string; windowID?: number }) => {
+    const { tabID, sessionID, windowID } = params;
     if (tabID) {
-      chrome.tabs.update(tabID, { active: true });
-    } else if (sessionID) browser.sessions.restore(sessionID);
+      browser.tabs.update(tabID, { active: true });
+      if (windowID) browser.windows.update(windowID, { focused: true });
+    } else if (!isSafari && sessionID) browser?.sessions?.restore(sessionID);
     window.close();
   };
   document.addEventListener('keydown', (e) => {
@@ -44,7 +51,7 @@
         selectedTab = filteredTabs?.[selectedIndex];
         break;
       case 'Enter':
-        chooseTab({ tabID: selectedTab?.id, sessionID: selectedTab?.sessionId });
+        chooseTab({ tabID: selectedTab?.id, sessionID: selectedTab?.sessionId, windowID: selectedTab?.windowId });
         break;
       case 'Escape':
         window.close();
@@ -52,7 +59,7 @@
       // case 'Backspace':
       //   if (search.length > 0) return;
       //   if (selectedTab?.id) {
-      //     chrome.tabs.remove(selectedTab.id);
+      //     browser.tabs.remove(selectedTab.id);
       //     tabs = tabs.filter((tab) => tab.id !== selectedTab?.id);
       //     selectedIndex = selectedIndex === tabs.length - 1 ? selectedIndex - 1 : selectedIndex;
       //     selectedTab = tabs?.[selectedIndex];
@@ -102,7 +109,7 @@
             onmouseenter={() => (hoveredTabID = tab.id)}
             onmouseleave={() => (hoveredTabID = undefined)}
             onclick={() => {
-              chooseTab({ tabID: tab.id, sessionID: tab.sessionId });
+              chooseTab({ tabID: tab.id, sessionID: tab.sessionId, windowID: tab.windowId });
             }}
           >
             <span class="flex items-center place-self-start truncate space-x-4">
@@ -130,7 +137,7 @@
                     <p>{tab.title || tab.url}</p>
                   {/if}
                 </span>
-                <div class="flex opacity-60">
+                <div class="flex opacity-60 text-xs">
                   {#if tab.url && tab.url.includes('://')}
                     {tab.url.split('://')[1].split('/')[0]}
                     {#if i < openTabCount}
