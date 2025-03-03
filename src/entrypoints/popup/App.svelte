@@ -15,7 +15,7 @@
   );
   const openTabCount = $derived(filteredTabs.length - filteredRecentlyClosedTabs.length);
   let prevFilteredTabsLength = $state(filteredTabs.length);
-  let selectedTabID: number | undefined = $state(undefined);
+  let selectedTab: browser.Tabs.Tab | undefined = $state(undefined);
   let search = $state('');
   let selectedIndex = $state(0);
   let hoveredTabID: number | undefined = $state(undefined);
@@ -24,26 +24,27 @@
       .map((session) => session.tab)
       .filter((t) => !!t);
     tabs = (await browser.tabs.query({})).concat(recentlyClosedTabs);
-    selectedTabID = tabs?.[0]?.id;
+    selectedTab = tabs?.[0];
   });
-  const switchToTabID = (tabID: number | undefined) => {
+  const chooseTab = (params: { tabID?: number; sessionID?: string }) => {
+    const { tabID, sessionID } = params;
     if (tabID) {
       chrome.tabs.update(tabID, { active: true });
-    }
+    } else if (sessionID) browser.sessions.restore(sessionID);
+    window.close();
   };
   document.addEventListener('keydown', (e) => {
     switch (e.key) {
       case 'ArrowUp':
         selectedIndex = selectedIndex === 0 ? filteredTabs.length - 1 : selectedIndex - 1;
-        selectedTabID = filteredTabs?.[selectedIndex]?.id;
+        selectedTab = filteredTabs?.[selectedIndex];
         break;
       case 'ArrowDown':
         selectedIndex = selectedIndex === filteredTabs.length - 1 ? 0 : selectedIndex + 1;
-        selectedTabID = filteredTabs?.[selectedIndex]?.id;
+        selectedTab = filteredTabs?.[selectedIndex];
         break;
       case 'Enter':
-        switchToTabID(selectedTabID);
-        window.close();
+        chooseTab({ tabID: selectedTab?.id, sessionID: selectedTab?.sessionId });
         break;
       case 'Escape':
         window.close();
@@ -53,7 +54,7 @@
   $effect(() => {
     if (prevFilteredTabsLength !== filteredTabs.length) {
       selectedIndex = 0;
-      selectedTabID = filteredTabs?.[selectedIndex]?.id;
+      selectedTab = filteredTabs?.[selectedIndex];
       prevFilteredTabsLength = filteredTabs.length;
     }
   });
@@ -87,13 +88,12 @@
           <button
             class={{
               ['cursor-pointer w-full px-4 p-1 flex items-center justify-between']: true,
-              ['bg-gray-100 dark:bg-stone-800']: selectedTabID === tab.id,
+              ['bg-gray-100 dark:bg-stone-800']: selectedTab?.id === tab?.id,
             }}
             onmouseenter={() => (hoveredTabID = tab.id)}
             onmouseleave={() => (hoveredTabID = undefined)}
             onclick={() => {
-              if (i < openTabCount) switchToTabID(tab.id);
-              else browser.sessions.restore(tab.sessionId);
+              chooseTab({ tabID: tab.id, sessionID: tab.sessionId });
             }}
           >
             <span class="flex items-center place-self-start truncate space-x-4">
@@ -157,7 +157,6 @@
 </main>
 
 <style>
-  /* detect dark mode */
   @media (prefers-color-scheme: dark) {
     :root {
       background-color: #121212;
