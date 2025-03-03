@@ -1,5 +1,7 @@
 {
   "name": "find-tab",
+  "displayName": "Find Tab",
+  "author": "github.com/jackbow",
   "description": "Replicates Chrome's 'Find Tab' feature",
   "private": true,
   "version": "1.0.0",

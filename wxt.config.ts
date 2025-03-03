@@ -1,4 +1,5 @@
 import { defineConfig } from 'wxt';
+import pkg from "./package.json";
 
 // See https://wxt.dev/api/config.html
 export default defineConfig({
@@ -6,6 +7,7 @@ export default defineConfig({
   extensionApi: 'webextension-polyfill',
   modules: ['@wxt-dev/module-svelte'],
   manifest: {
+    name: pkg.displayName,
     permissions: ["tabs", "sessions"],
     host_permissions: [
       "<all_urls>"
