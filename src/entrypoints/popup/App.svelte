@@ -84,6 +84,7 @@
 <main class="w-80">
   <span class="flex items-center pr-2">
     <input
+      autocomplete="off"
       type="text"
       bind:value={search}
       autofocus
