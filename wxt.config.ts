@@ -12,6 +12,12 @@ export default defineConfig({
     host_permissions: [
       "<all_urls>"
     ],
+    browser_specific_settings: {
+      gecko: {
+        id: "@find-tab.jack",
+        strict_min_version: "109.0"
+      }
+    },
     background: { scripts: ["src/entrypoints/background.ts"] },
     action: {
       default_popup: "src/entrypoints/popup/index.html",
