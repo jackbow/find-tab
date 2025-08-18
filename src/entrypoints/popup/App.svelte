@@ -8,15 +8,10 @@
   const isSafari = navigator.userAgent.includes('Safari') && !navigator.userAgent.includes('Chrome');
   let tabs: browser.Tabs.Tab[] = $state([]);
   let recentlyClosedTabs: browser.Tabs.Tab[] = $state([]);
-  let filteredTabs: browser.Tabs.Tab[] = $derived(
-    tabs.filter(
-      (tab) =>
-        (isSafari ? !!tab.title && !!tab.url : true) && (tab.title ?? '').toLowerCase().includes(search.toLowerCase())
-    )
-  );
-  let filteredRecentlyClosedTabs: browser.Tabs.Tab[] = $derived(
-    recentlyClosedTabs.filter((tab) => (tab.title ?? '').toLowerCase().includes(search.toLowerCase()))
-  );
+  const tabSieve = (tab: browser.Tabs.Tab) => (isSafari ? !!tab.title && !!tab.url : true) && ((tab.title ?? '').toLowerCase().includes(search.toLowerCase()) || 
+    (tab.url ?? '').toLowerCase().includes(search.toLowerCase()));
+  let filteredTabs: browser.Tabs.Tab[] = $derived(tabs.filter(tabSieve));
+  let filteredRecentlyClosedTabs: browser.Tabs.Tab[] = $derived(recentlyClosedTabs.filter(tabSieve));
   const openTabCount = $derived(filteredTabs.length - filteredRecentlyClosedTabs.length);
   let prevFilteredTabsLength = $state(filteredTabs.length);
   let selectedTab: browser.Tabs.Tab | undefined = $state(undefined);
@@ -46,7 +41,35 @@
     } else if (!isSafari && sessionID) browser?.sessions?.restore(sessionID);
     window.close();
   };
+
   document.addEventListener('keydown', (e) => {
+    const isFirefox = navigator.userAgent.includes('Firefox');
+    const modifierKey = navigator.platform.includes('Mac') ? e.metaKey : e.ctrlKey;
+    if (modifierKey) {
+      e.preventDefault()
+      if (e.key === 'Backspace') {
+        if (e.shiftKey) {
+          const tabIDs = new Set(filteredTabs.map(tab => tab.id));
+          browser.tabs.remove(filteredTabs.map(tab=>tab.id).filter(id => id !== undefined));
+          tabs = tabs.filter((tab) => !tabIDs.has(tab.id));
+          search = '';
+        } else if (selectedTab?.id) {
+          tabs = tabs.filter((tab) => tab.id !== selectedTab?.id);
+          browser.tabs.remove(selectedTab.id)
+        }
+      }
+      if (isFirefox && e.key === 'd') {
+        if (e.shiftKey) {
+          browser.tabs.discard(filteredTabs.map(tab=>tab.id).filter(id => id !== undefined));
+          for (const tab of filteredTabs) {
+            tab.discarded = true;
+          }
+        } else if (selectedTab?.id) {
+          browser.tabs.discard(selectedTab.id)
+          selectedTab.discarded = true
+        }
+      }
+    }
     switch (e.key) {
       case 'ArrowUp':
         selectedIndex = selectedIndex === 0 ? filteredTabs.length - 1 : selectedIndex - 1;
@@ -62,15 +85,6 @@
       case 'Escape':
         window.close();
         break;
-      // case 'Backspace':
-      //   if (search.length > 0) return;
-      //   if (selectedTab?.id) {
-      //     browser.tabs.remove(selectedTab.id);
-      //     tabs = tabs.filter((tab) => tab.id !== selectedTab?.id);
-      //     selectedIndex = selectedIndex === tabs.length - 1 ? selectedIndex - 1 : selectedIndex;
-      //     selectedTab = tabs?.[selectedIndex];
-      //   }
-      //   break;
     }
   });
   $effect(() => {
@@ -101,13 +115,16 @@
       <p class="text-gray-500">⇧⌘E</p>
     {/if}
   </span>
+  {#if filteredTabs.length === 0}
+    <p class="p-2 text-gray-400">No results found</p>
+  {/if}
   {#if tabs.length > 0}
     <ul class="border-t border-gray-200 dark:border-gray-700">
       {#each filteredTabs as tab, i}
         {#if i === openTabCount}
           <li class="text-gray-500 text-sm px-4 py-1">Recently closed</li>
         {/if}
-        <li>
+        <li class:opacity-70={i < openTabCount || (tab?.discarded ?? false)}>
           <button
             class={{
               ['cursor-pointer w-full px-4 p-1 flex items-center justify-between']: true,
