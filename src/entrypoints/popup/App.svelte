@@ -125,7 +125,7 @@
         {#if i === openTabCount}
           <li class="text-gray-500 text-sm px-4 py-1">Recently closed</li>
         {/if}
-        <li class:opacity-70={i < openTabCount || (tab?.discarded ?? false)}>
+        <li class:opacity-70={i < openTabCount && (tab?.discarded ?? false)}>
           <button
             class={{
               ['cursor-pointer w-full px-4 p-1 flex items-center justify-between']: true,
