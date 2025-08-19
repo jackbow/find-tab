@@ -46,8 +46,8 @@
     const isFirefox = navigator.userAgent.includes('Firefox');
     const modifierKey = navigator.platform.includes('Mac') ? e.metaKey : e.ctrlKey;
     if (modifierKey) {
-      e.preventDefault()
-      if (e.key === 'Backspace') {
+      if (e.key === 'd') {
+        e.preventDefault();
         if (e.shiftKey) {
           const tabIDs = new Set(filteredTabs.map(tab => tab.id));
           browser.tabs.remove(filteredTabs.map(tab=>tab.id).filter(id => id !== undefined));
@@ -58,7 +58,8 @@
           browser.tabs.remove(selectedTab.id)
         }
       }
-      if (isFirefox && e.key === 'd') {
+      if (isFirefox && e.key === 's') {
+        e.preventDefault();
         if (e.shiftKey) {
           browser.tabs.discard(filteredTabs.map(tab=>tab.id).filter(id => id !== undefined));
           for (const tab of filteredTabs) {
