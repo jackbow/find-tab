@@ -72,14 +72,40 @@
         }
       }
     }
+    const elementInView = (element: HTMLElement) => {
+      const rect = element.getBoundingClientRect();
+      return rect.top >= 0 && rect.bottom <= window.innerHeight;
+    };
     switch (e.key) {
       case 'ArrowUp':
+        e.preventDefault();
         selectedIndex = selectedIndex === 0 ? filteredTabs.length - 1 : selectedIndex - 1;
+        if (selectedIndex === 0) {
+          window.scrollTo(0, 0);
+          break;
+        }
         selectedTab = filteredTabs?.[selectedIndex];
+        const element = document?.getElementById("tab-"+selectedIndex);
+        if (element) {
+          if (!elementInView(element)) {
+            element.scrollIntoView(selectedIndex !== filteredTabs.length - 1);
+          }
+        }
         break;
       case 'ArrowDown':
+        e.preventDefault();
         selectedIndex = selectedIndex === filteredTabs.length - 1 ? 0 : selectedIndex + 1;
+        if (selectedIndex === 0) {
+          window.scrollTo(0, 0);
+          break;
+        }
         selectedTab = filteredTabs?.[selectedIndex];
+        const elt = document?.getElementById("tab-"+selectedIndex);
+        if (elt) {
+          if (!elementInView(elt)) {
+            elt.scrollIntoView(false);
+          }
+        }
         break;
       case 'Enter':
         chooseTab({ tabID: selectedTab?.id, sessionID: selectedTab?.sessionId, windowID: selectedTab?.windowId });
@@ -126,14 +152,20 @@
         {#if i === openTabCount}
           <li class="text-gray-500 text-sm px-4 py-1">Recently closed</li>
         {/if}
-        <li class:opacity-70={i < openTabCount && (tab?.discarded ?? false)}>
+        <li class:opacity-70={i < openTabCount && (tab?.discarded ?? false)} id={"tab-"+i}>
           <button
             class={{
               ['cursor-pointer w-full px-4 p-1 flex items-center justify-between']: true,
-              ['bg-gray-100 dark:bg-stone-800']: selectedTab?.id === tab?.id,
+              ['bg-gray-100 dark:bg-stone-800']: selectedIndex === i,
             }}
-            onmouseenter={() => (hoveredTabID = tab.id)}
-            onmouseleave={() => (hoveredTabID = undefined)}
+            onmouseenter={() => {
+              hoveredTabID = tab.id
+              selectedIndex = i
+              selectedTab = tab
+            }}
+            onmouseleave={() => {
+              hoveredTabID = undefined
+            }}
             onclick={() => {
               chooseTab({ tabID: tab.id, sessionID: tab.sessionId, windowID: tab.windowId });
             }}
@@ -165,14 +197,9 @@
                 </span>
                 <div class="flex opacity-60 text-xs">
                   {#if tab.url && tab.url.includes('://')}
-                    {tab.url.split('://')[1].split('/')[0]}
-                    {#if i < openTabCount}
-                      •
-                    {/if}
+                    {tab.url.split('://')[1].split('/')[0]} •
                   {/if}
-                  {#if i < openTabCount}
-                    {formatDistanceToNow(tab.lastAccessed ?? new Date(), { addSuffix: true })}
-                  {/if}
+                  {formatDistanceToNow(tab.lastAccessed ?? new Date(), { addSuffix: true })}
                 </div>
               </div>
             </span>
