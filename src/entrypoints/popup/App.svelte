@@ -34,12 +34,18 @@
       .concat(recentlyClosedTabs);
     selectedTab = tabs?.[0];
   });
-  const chooseTab = (params: { tabID?: number; sessionID?: string; windowID?: number }) => {
+  const chooseTab = async (params: { tabID?: number; sessionID?: string; windowID?: number }) => {
     const { tabID, sessionID, windowID } = params;
     if (tabID) {
       browser.tabs.update(tabID, { active: true });
       if (windowID) browser.windows.update(windowID, { focused: true });
-    } else if (!isSafari && sessionID) browser?.sessions?.restore(sessionID);
+    } else if (!isSafari && sessionID) {
+      const session = await browser?.sessions?.restore(sessionID);
+      if (session?.tab?.id) {
+        browser.tabs.update(session.tab.id, { active: true });
+        if (session.tab.windowId) browser.windows.update(session.tab.windowId, { focused: true });
+      }
+    }
     window.close();
   };
 
