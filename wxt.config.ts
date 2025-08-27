@@ -9,9 +9,6 @@ export default defineConfig({
   manifest: {
     name: pkg.displayName,
     permissions: ["tabs", "sessions"],
-    host_permissions: [
-      "<all_urls>"
-    ],
     browser_specific_settings: {
       gecko: {
         id: "@find-tab.jack",
