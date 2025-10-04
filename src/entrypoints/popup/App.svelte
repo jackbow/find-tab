@@ -1,21 +1,29 @@
 <svelte:options runes={true} />
 
 <script lang="ts">
-  import { onMount } from 'svelte';
-  import browser from 'webextension-polyfill';
-  import { formatDistanceToNow } from 'date-fns';
-  import Icon from '~/lib/Icon.svelte';
-  const isSafari = navigator.userAgent.includes('Safari') && !navigator.userAgent.includes('Chrome');
+  import { onMount } from "svelte";
+  import browser from "webextension-polyfill";
+  import { formatDistanceToNow } from "date-fns";
+  import Icon from "~/lib/Icon.svelte";
+  const isSafari =
+    navigator.userAgent.includes("Safari") &&
+    !navigator.userAgent.includes("Chrome");
   let tabs: browser.Tabs.Tab[] = $state([]);
   let recentlyClosedTabs: browser.Tabs.Tab[] = $state([]);
-  const tabSieve = (tab: browser.Tabs.Tab) => (isSafari ? !!tab.title && !!tab.url : true) && ((tab.title ?? '').toLowerCase().includes(search.toLowerCase()) || 
-    (tab.url ?? '').toLowerCase().includes(search.toLowerCase()));
+  const tabSieve = (tab: browser.Tabs.Tab) =>
+    (isSafari ? !!tab.title && !!tab.url : true) &&
+    ((tab.title ?? "").toLowerCase().includes(search.toLowerCase()) ||
+      (tab.url ?? "").toLowerCase().includes(search.toLowerCase()));
   let filteredTabs: browser.Tabs.Tab[] = $derived(tabs.filter(tabSieve));
-  let filteredRecentlyClosedTabs: browser.Tabs.Tab[] = $derived(recentlyClosedTabs.filter(tabSieve));
-  const openTabCount = $derived(filteredTabs.length - filteredRecentlyClosedTabs.length);
+  let filteredRecentlyClosedTabs: browser.Tabs.Tab[] = $derived(
+    recentlyClosedTabs.filter(tabSieve),
+  );
+  const openTabCount = $derived(
+    filteredTabs.length - filteredRecentlyClosedTabs.length,
+  );
   let prevFilteredTabsLength = $state(filteredTabs.length);
   let selectedTab: browser.Tabs.Tab | undefined = $state(undefined);
-  let search = $state('');
+  let search = $state("");
   let selectedIndex = $state(0);
   let hoveredTabID: number | undefined = $state(undefined);
   onMount(async () => {
@@ -24,7 +32,9 @@
       : (await browser?.sessions?.getRecentlyClosed({ maxResults: 10 }))
           ?.map((session) => session.tab)
           ?.filter((t) => !!t);
-    const currentTabID = (await browser.tabs.query({ active: true, currentWindow: true }))[0]?.id;
+    const currentTabID = (
+      await browser.tabs.query({ active: true, currentWindow: true })
+    )[0]?.id;
     tabs = (await browser.tabs.query({}))
       .sort((a, b) => {
         if (a.id === currentTabID) return 1;
@@ -34,7 +44,11 @@
       .concat(recentlyClosedTabs);
     selectedTab = tabs?.[0];
   });
-  const chooseTab = async (params: { tabID?: number; sessionID?: string; windowID?: number }) => {
+  const chooseTab = async (params: {
+    tabID?: number;
+    sessionID?: string;
+    windowID?: number;
+  }) => {
     const { tabID, sessionID, windowID } = params;
     if (tabID) {
       browser.tabs.update(tabID, { active: true });
@@ -43,38 +57,45 @@
       const session = await browser?.sessions?.restore(sessionID);
       if (session?.tab?.id) {
         browser.tabs.update(session.tab.id, { active: true });
-        if (session.tab.windowId) browser.windows.update(session.tab.windowId, { focused: true });
+        if (session.tab.windowId)
+          browser.windows.update(session.tab.windowId, { focused: true });
       }
     }
     window.close();
   };
 
-  document.addEventListener('keydown', (e) => {
-    const isFirefox = navigator.userAgent.includes('Firefox');
-    const modifierKey = navigator.platform.includes('Mac') ? e.metaKey : e.ctrlKey;
+  document.addEventListener("keydown", (e) => {
+    const isFirefox = navigator.userAgent.includes("Firefox");
+    const modifierKey = navigator.platform.includes("Mac")
+      ? e.metaKey
+      : e.ctrlKey;
     if (modifierKey) {
-      if (e.key === 'd') {
+      if (e.key === "d") {
         e.preventDefault();
         if (e.shiftKey) {
-          const tabIDs = new Set(filteredTabs.map(tab => tab.id));
-          browser.tabs.remove(filteredTabs.map(tab=>tab.id).filter(id => id !== undefined));
+          const tabIDs = new Set(filteredTabs.map((tab) => tab.id));
+          browser.tabs.remove(
+            filteredTabs.map((tab) => tab.id).filter((id) => id !== undefined),
+          );
           tabs = tabs.filter((tab) => !tabIDs.has(tab.id));
-          search = '';
+          search = "";
         } else if (selectedTab?.id) {
           tabs = tabs.filter((tab) => tab.id !== selectedTab?.id);
-          browser.tabs.remove(selectedTab.id)
+          browser.tabs.remove(selectedTab.id);
         }
       }
-      if (isFirefox && e.key === 's') {
+      if (isFirefox && e.key === "s") {
         e.preventDefault();
         if (e.shiftKey) {
-          browser.tabs.discard(filteredTabs.map(tab=>tab.id).filter(id => id !== undefined));
+          browser.tabs.discard(
+            filteredTabs.map((tab) => tab.id).filter((id) => id !== undefined),
+          );
           for (const tab of filteredTabs) {
             tab.discarded = true;
           }
         } else if (selectedTab?.id) {
-          browser.tabs.discard(selectedTab.id)
-          selectedTab.discarded = true
+          browser.tabs.discard(selectedTab.id);
+          selectedTab.discarded = true;
         }
       }
     }
@@ -83,40 +104,50 @@
       return rect.top >= 0 && rect.bottom <= window.innerHeight;
     };
     switch (e.key) {
-      case 'ArrowUp':
+      case "ArrowUp":
         e.preventDefault();
-        selectedIndex = selectedIndex === 0 ? filteredTabs.length - 1 : selectedIndex - 1;
+        selectedIndex =
+          selectedIndex === 0 ? filteredTabs.length - 1 : selectedIndex - 1;
         if (selectedIndex === 0) {
           window.scrollTo(0, 0);
           break;
         }
         selectedTab = filteredTabs?.[selectedIndex];
-        const element = document?.getElementById("tab-"+selectedIndex);
-        if (element) {
-          if (!elementInView(element)) {
-            element.scrollIntoView(selectedIndex !== filteredTabs.length - 1);
+        {
+          const element = document?.getElementById("tab-" + selectedIndex);
+          if (element) {
+            if (!elementInView(element)) {
+              element.scrollIntoView(selectedIndex !== filteredTabs.length - 1);
+            }
           }
         }
         break;
-      case 'ArrowDown':
+      case "ArrowDown":
         e.preventDefault();
-        selectedIndex = selectedIndex === filteredTabs.length - 1 ? 0 : selectedIndex + 1;
+        selectedIndex =
+          selectedIndex === filteredTabs.length - 1 ? 0 : selectedIndex + 1;
         if (selectedIndex === 0) {
           window.scrollTo(0, 0);
           break;
         }
         selectedTab = filteredTabs?.[selectedIndex];
-        const elt = document?.getElementById("tab-"+selectedIndex);
-        if (elt) {
-          if (!elementInView(elt)) {
-            elt.scrollIntoView(false);
+        {
+          const element = document?.getElementById("tab-" + selectedIndex);
+          if (element) {
+            if (!elementInView(element)) {
+              element.scrollIntoView(false);
+            }
           }
         }
         break;
-      case 'Enter':
-        chooseTab({ tabID: selectedTab?.id, sessionID: selectedTab?.sessionId, windowID: selectedTab?.windowId });
+      case "Enter":
+        chooseTab({
+          tabID: selectedTab?.id,
+          sessionID: selectedTab?.sessionId,
+          windowID: selectedTab?.windowId,
+        });
         break;
-      case 'Escape':
+      case "Escape":
         window.close();
         break;
     }
@@ -130,7 +161,11 @@
   });
   const getSearchParts = (str: string, substr: string) => {
     const idx = str.toLocaleLowerCase().indexOf(substr);
-    return [str.slice(0, idx), str.slice(idx, idx + substr.length), str.slice(idx + substr.length)];
+    return [
+      str.slice(0, idx),
+      str.slice(idx, idx + substr.length),
+      str.slice(idx + substr.length),
+    ];
   };
   const titleResultIDs = $derived(new Set(filteredTabs.map((tab) => tab.id)));
 </script>
@@ -158,31 +193,43 @@
         {#if i === openTabCount}
           <li class="text-gray-500 text-sm px-4 py-1">Recently closed</li>
         {/if}
-        <li class:opacity-70={i < openTabCount && (tab?.discarded ?? false)} id={"tab-"+i}>
+        <li
+          class:opacity-70={i < openTabCount && (tab?.discarded ?? false)}
+          id={"tab-" + i}
+        >
           <button
             class={{
-              ['cursor-pointer w-full px-4 p-1 flex items-center justify-between']: true,
-              ['bg-gray-100 dark:bg-stone-800']: selectedIndex === i,
+              ["cursor-pointer w-full px-4 p-1 flex items-center justify-between"]: true,
+              ["bg-gray-100 dark:bg-stone-800"]: selectedIndex === i,
             }}
             onmouseenter={() => {
-              hoveredTabID = tab.id
-              selectedIndex = i
-              selectedTab = tab
+              hoveredTabID = tab.id;
+              selectedIndex = i;
+              selectedTab = tab;
             }}
             onmouseleave={() => {
-              hoveredTabID = undefined
+              hoveredTabID = undefined;
             }}
             onclick={() => {
-              chooseTab({ tabID: tab.id, sessionID: tab.sessionId, windowID: tab.windowId });
+              chooseTab({
+                tabID: tab.id,
+                sessionID: tab.sessionId,
+                windowID: tab.windowId,
+              });
             }}
           >
             <span class="flex items-center place-self-start truncate space-x-4">
               <div class="h-4 w-4 max-w-4 min-w-4">
                 {#if tab.favIconUrl}
                   <img src={tab.favIconUrl} alt="favicon" />
-                {:else if tab?.url && ['https', 'http'].includes(tab.url.split('://')[0])}
+                {:else if tab?.url && ["https", "http"].includes(tab.url.split("://")[0])}
                   <!-- src={'http://www.google.com/s2/favicons?sz=64&domain=' + new URL(tab.url).hostname} -->
-                  <img src={'https://icons.duckduckgo.com/ip3/' + new URL(tab.url).hostname + '.ico'} alt="favicon" />
+                  <img
+                    src={"https://icons.duckduckgo.com/ip3/" +
+                      new URL(tab.url).hostname +
+                      ".ico"}
+                    alt="favicon"
+                  />
                 {:else}
                   <Icon name="earth" height={18} width={18} />
                 {/if}
@@ -190,7 +237,7 @@
               <div class="flex flex-col items-start">
                 <span class="overflow-ellipsis overflow-hidden text-[.8rem]">
                   {#if titleResultIDs.has(tab.id)}
-                    {#each getSearchParts(tab?.title ?? '', search) as part, i (i)}
+                    {#each getSearchParts(tab?.title ?? "", search) as part, i (i)}
                       {#if i % 2 == 0}
                         <p class="inline">{part}</p>
                       {:else}
@@ -202,10 +249,12 @@
                   {/if}
                 </span>
                 <div class="flex opacity-60 text-xs">
-                  {#if tab.url && tab.url.includes('://')}
-                    {tab.url.split('://')[1].split('/')[0]} •
+                  {#if tab.url && tab.url.includes("://")}
+                    {tab.url.split("://")[1].split("/")[0]} •
                   {/if}
-                  {formatDistanceToNow(tab.lastAccessed ?? new Date(), { addSuffix: true })}
+                  {formatDistanceToNow(tab.lastAccessed ?? new Date(), {
+                    addSuffix: true,
+                  })}
                 </div>
               </div>
             </span>
@@ -219,10 +268,15 @@
                   if (tab.id) await browser.tabs.remove(tab.id);
                   recentlyClosedTabs = isSafari
                     ? []
-                    : (await browser?.sessions?.getRecentlyClosed({ maxResults: 10 }))
+                    : (
+                        await browser?.sessions?.getRecentlyClosed({
+                          maxResults: 10,
+                        })
+                      )
                         ?.map((session) => session.tab)
                         ?.filter((t) => !!t);
-                  if (recentlyClosedTabs.length > 0) tabs.push(recentlyClosedTabs[0]);
+                  if (recentlyClosedTabs.length > 0)
+                    tabs.push(recentlyClosedTabs[0]);
                 }}
               >
                 <Icon name="close" height={18} width={18} />
