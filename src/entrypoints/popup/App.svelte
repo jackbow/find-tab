@@ -164,11 +164,36 @@
     if (!lowercaseSearch) return [str, "", ""];
     const idx = str.toLocaleLowerCase().indexOf(lowercaseSearch);
     if (idx === -1) return [str, "", ""];
-    return [
-      str.slice(0, idx),
-      str.slice(idx, idx + lowercaseSearch.length),
-      str.slice(idx + lowercaseSearch.length),
-    ];
+
+    const matchLen = lowercaseSearch.length;
+    const MAX_CHARS = 30;
+
+    let start, end;
+    if (matchLen >= MAX_CHARS) {
+      const matchEnd = idx + matchLen;
+      return [
+        "...",
+        str.slice(Math.max(idx, matchEnd - MAX_CHARS + 3), matchEnd),
+        "",
+      ];
+    } else {
+      const halfRemaining = Math.floor((MAX_CHARS - matchLen) / 2);
+      start = Math.max(0, idx - halfRemaining);
+      end = Math.min(str.length, start + MAX_CHARS);
+
+      if (end === str.length) {
+        start = Math.max(0, end - MAX_CHARS);
+      }
+    }
+
+    let prefix = str.slice(start, idx);
+    const match = str.slice(idx, idx + matchLen);
+    let suffix = str.slice(idx + matchLen, end);
+
+    if (start > 0) prefix = "..." + prefix;
+    if (end < str.length) suffix = suffix + "...";
+
+    return [prefix, match, suffix];
   };
   const titleMatches = (tab: browser.Tabs.Tab) =>
     (tab.title ?? "").toLowerCase().includes(lowercaseSearch);
