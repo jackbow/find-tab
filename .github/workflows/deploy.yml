@@ -17,6 +17,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -30,10 +32,24 @@ jobs:
       - name: Build and Zip
         run: npm run zip:firefox
 
+      - name: Generate Release Body
+        id: release_body
+        run: |
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || true)
+          if [ -z "$PREV_TAG" ]; then
+            CHANGELOG=$(git log --pretty=format:"* %s")
+          else
+            CHANGELOG=$(git log --pretty=format:"* %s" ${PREV_TAG}..HEAD)
+          fi
+          echo "body<<EOF" >> $GITHUB_OUTPUT
+          echo "$CHANGELOG" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
       - name: Create Release
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v1
         with:
+          body: ${{ steps.release_body.outputs.body }}
           files: |
             .output/*-firefox.zip
             .output/*-sources.zip
