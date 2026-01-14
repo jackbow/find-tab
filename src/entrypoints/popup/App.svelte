@@ -225,14 +225,21 @@
             <span class="flex items-center place-self-start truncate space-x-4">
               <div class="h-4 w-4 max-w-4 min-w-4">
                 {#if tab.favIconUrl}
-                  <img src={tab.favIconUrl} alt="favicon" />
+                  <img
+                    src={tab.favIconUrl}
+                    alt=""
+                    onerror={(e) =>
+                      ((e.currentTarget as HTMLElement).style.display = "none")}
+                  />
                 {:else if tab?.url && ["https", "http"].includes(tab.url.split("://")[0])}
                   <!-- src={'http://www.google.com/s2/favicons?sz=64&domain=' + new URL(tab.url).hostname} -->
                   <img
                     src={"https://icons.duckduckgo.com/ip3/" +
                       new URL(tab.url).hostname +
                       ".ico"}
-                    alt="favicon"
+                    alt=""
+                    onerror={(e) =>
+                      ((e.currentTarget as HTMLElement).style.display = "none")}
                   />
                 {:else}
                   <Icon name="earth" height={18} width={18} />
