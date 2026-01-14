@@ -161,9 +161,9 @@
     }
   });
   const getSearchParts = (str: string) => {
-    if (!lowercaseSearch) return [str, "", ""];
+    if (!lowercaseSearch) return null;
     const idx = str.toLocaleLowerCase().indexOf(lowercaseSearch);
-    if (idx === -1) return [str, "", ""];
+    if (idx === -1) return null;
 
     const matchLen = lowercaseSearch.length;
     const MAX_CHARS = 30;
@@ -195,10 +195,6 @@
 
     return [prefix, match, suffix];
   };
-  const titleMatches = (tab: browser.Tabs.Tab) =>
-    (tab.title ?? "").toLowerCase().includes(lowercaseSearch);
-  const urlMatches = (tab: browser.Tabs.Tab) =>
-    (tab.url ?? "").toLowerCase().includes(lowercaseSearch);
 </script>
 
 <main class="w-80">
@@ -222,6 +218,8 @@
   {#if tabs.length > 0}
     <ul class="border-t border-gray-200 dark:border-gray-700">
       {#each filteredTabs as tab, i}
+        {@const titleParts = getSearchParts(tab?.title ?? "")}
+        {@const urlParts = !titleParts ? getSearchParts(tab?.url ?? "") : null}
         {#if i === openTabCount}
           <li class="text-gray-500 text-sm px-4 py-1">Recently closed</li>
         {/if}
@@ -268,16 +266,16 @@
               </div>
               <div class="flex flex-col items-start">
                 <span class="overflow-ellipsis overflow-hidden text-[.8rem]">
-                  {#if titleMatches(tab)}
-                    {#each getSearchParts(tab?.title ?? "") as part, i (i)}
+                  {#if titleParts}
+                    {#each titleParts as part, i (i)}
                       {#if i % 2 == 0}
                         <p class="inline">{part}</p>
                       {:else}
                         <p class="inline font-bold dark:bg-amber-900">{part}</p>
                       {/if}
                     {/each}
-                  {:else if urlMatches(tab)}
-                    {#each getSearchParts(tab?.url ?? "") as part, i (i)}
+                  {:else if urlParts}
+                    {#each urlParts as part, i (i)}
                       {#if i % 2 == 0}
                         <p class="inline">{part}</p>
                       {:else}
