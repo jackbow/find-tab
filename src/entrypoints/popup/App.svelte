@@ -219,7 +219,6 @@
     <ul class="border-t border-gray-200 dark:border-gray-700">
       {#each filteredTabs as tab, i}
         {@const titleParts = getSearchParts(tab?.title ?? "")}
-        {@const urlParts = !titleParts ? getSearchParts(tab?.url ?? "") : null}
         {#if i === openTabCount}
           <li class="text-gray-500 text-sm px-4 py-1">Recently closed</li>
         {/if}
@@ -268,14 +267,6 @@
                 <span class="overflow-ellipsis overflow-hidden text-[.8rem]">
                   {#if titleParts}
                     {#each titleParts as part, i (i)}
-                      {#if i % 2 == 0}
-                        <p class="inline">{part}</p>
-                      {:else}
-                        <p class="inline font-bold dark:bg-amber-900">{part}</p>
-                      {/if}
-                    {/each}
-                  {:else if urlParts}
-                    {#each urlParts as part, i (i)}
                       {#if i % 2 == 0}
                         <p class="inline">{part}</p>
                       {:else}
