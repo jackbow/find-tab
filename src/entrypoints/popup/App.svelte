@@ -12,8 +12,8 @@
   let recentlyClosedTabs: browser.Tabs.Tab[] = $state([]);
   const tabSieve = (tab: browser.Tabs.Tab) =>
     (isSafari ? !!tab.title && !!tab.url : true) &&
-    ((tab.title ?? "").toLowerCase().includes(search.toLowerCase()) ||
-      (tab.url ?? "").toLowerCase().includes(search.toLowerCase()));
+    ((tab.title ?? "").toLowerCase().includes(lowercaseSearch) ||
+      (tab.url ?? "").toLowerCase().includes(lowercaseSearch));
   let filteredTabs: browser.Tabs.Tab[] = $derived(tabs.filter(tabSieve));
   let filteredRecentlyClosedTabs: browser.Tabs.Tab[] = $derived(
     recentlyClosedTabs.filter(tabSieve),
@@ -24,6 +24,7 @@
   let prevFilteredTabsLength = $state(filteredTabs.length);
   let selectedTab: browser.Tabs.Tab | undefined = $state(undefined);
   let search = $state("");
+  let lowercaseSearch = $derived(search.toLocaleLowerCase());
   let selectedIndex = $state(0);
   let hoveredTabID: number | undefined = $state(undefined);
   onMount(async () => {
@@ -159,24 +160,25 @@
       prevFilteredTabsLength = filteredTabs.length;
     }
   });
-  const getSearchParts = (str: string, substr: string) => {
-    if (!substr) return [str, "", ""];
-    const idx = str.toLocaleLowerCase().indexOf(substr.toLocaleLowerCase());
+  const getSearchParts = (str: string) => {
+    if (!lowercaseSearch) return [str, "", ""];
+    const idx = str.toLocaleLowerCase().indexOf(lowercaseSearch);
     if (idx === -1) return [str, "", ""];
     return [
       str.slice(0, idx),
-      str.slice(idx, idx + substr.length),
-      str.slice(idx + substr.length),
+      str.slice(idx, idx + lowercaseSearch.length),
+      str.slice(idx + lowercaseSearch.length),
     ];
   };
   const titleMatches = (tab: browser.Tabs.Tab) =>
-    (tab.title ?? "").toLowerCase().includes(search.toLowerCase());
+    (tab.title ?? "").toLowerCase().includes(lowercaseSearch);
   const urlMatches = (tab: browser.Tabs.Tab) =>
-    (tab.url ?? "").toLowerCase().includes(search.toLowerCase());
+    (tab.url ?? "").toLowerCase().includes(lowercaseSearch);
 </script>
 
 <main class="w-80">
   <span class="flex items-center pr-2">
+    <!-- svelte-ignore a11y_autofocus -->
     <input
       autocomplete="off"
       type="text"
@@ -242,7 +244,7 @@
               <div class="flex flex-col items-start">
                 <span class="overflow-ellipsis overflow-hidden text-[.8rem]">
                   {#if titleMatches(tab)}
-                    {#each getSearchParts(tab?.title ?? "", search) as part, i (i)}
+                    {#each getSearchParts(tab?.title ?? "") as part, i (i)}
                       {#if i % 2 == 0}
                         <p class="inline">{part}</p>
                       {:else}
@@ -250,7 +252,7 @@
                       {/if}
                     {/each}
                   {:else if urlMatches(tab)}
-                    {#each getSearchParts(tab?.url ?? "", search) as part, i (i)}
+                    {#each getSearchParts(tab?.url ?? "") as part, i (i)}
                       {#if i % 2 == 0}
                         <p class="inline">{part}</p>
                       {:else}
