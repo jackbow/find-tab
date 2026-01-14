@@ -160,14 +160,19 @@
     }
   });
   const getSearchParts = (str: string, substr: string) => {
-    const idx = str.toLocaleLowerCase().indexOf(substr);
+    if (!substr) return [str, "", ""];
+    const idx = str.toLocaleLowerCase().indexOf(substr.toLocaleLowerCase());
+    if (idx === -1) return [str, "", ""];
     return [
       str.slice(0, idx),
       str.slice(idx, idx + substr.length),
       str.slice(idx + substr.length),
     ];
   };
-  const titleResultIDs = $derived(new Set(filteredTabs.map((tab) => tab.id)));
+  const titleMatches = (tab: browser.Tabs.Tab) =>
+    (tab.title ?? "").toLowerCase().includes(search.toLowerCase());
+  const urlMatches = (tab: browser.Tabs.Tab) =>
+    (tab.url ?? "").toLowerCase().includes(search.toLowerCase());
 </script>
 
 <main class="w-80">
@@ -236,8 +241,16 @@
               </div>
               <div class="flex flex-col items-start">
                 <span class="overflow-ellipsis overflow-hidden text-[.8rem]">
-                  {#if titleResultIDs.has(tab.id)}
+                  {#if titleMatches(tab)}
                     {#each getSearchParts(tab?.title ?? "", search) as part, i (i)}
+                      {#if i % 2 == 0}
+                        <p class="inline">{part}</p>
+                      {:else}
+                        <p class="inline font-bold dark:bg-amber-900">{part}</p>
+                      {/if}
+                    {/each}
+                  {:else if urlMatches(tab)}
+                    {#each getSearchParts(tab?.url ?? "", search) as part, i (i)}
                       {#if i % 2 == 0}
                         <p class="inline">{part}</p>
                       {:else}
